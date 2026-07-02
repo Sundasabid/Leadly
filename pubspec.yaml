@@ -1,0 +1,83 @@
+name: leadly
+description: AI-Powered Real Estate CRM for Pakistani Agents
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Backend
+  supabase_flutter: ^2.8.4
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Navigation
+  go_router: ^14.6.3
+
+  # Models / serialization
+  freezed_annotation: ^3.0.0
+  json_annotation: ^4.9.0
+
+  # Local storage (theme preference, onboarding flag)
+  shared_preferences: ^2.3.3
+
+  # Charts (dashboard sparkline + insights trend chart)
+  fl_chart: ^0.70.2
+
+  # Audio recording (voice lead entry)
+  record: ^7.0.0
+  permission_handler: ^11.3.1
+
+  # Contact picker (phone field)
+  flutter_contacts: ^2.2.2
+
+  # Formatting
+  intl: ^0.19.0
+
+  # Images
+  cached_network_image: ^3.4.1
+
+  # Google Sign-In & URL launching
+  google_sign_in: ^6.2.2
+  google_fonts: ^8.1.0
+  url_launcher: ^6.3.1
+
+  # Animated curved bottom navigation bar
+  curved_navigation_bar: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+  # Code generation
+  riverpod_generator: ^2.6.5
+  build_runner: ^2.4.13
+  freezed: ^3.0.0
+  json_serializable: ^6.8.0
+  riverpod_lint: ^2.6.5
+  custom_lint: ^0.7.5
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  # Icon already has a rounded background built in — no additional adaptive
+  # background color or foreground scaling needed.
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/

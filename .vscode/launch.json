@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Leadly (Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define-from-file=env.dev.json",
+        "--web-port=3000"
+      ],
+      "deviceId": "chrome"
+    },
+    {
+      "name": "Leadly (Android)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define-from-file=env.dev.json"
+      ],
+      "deviceId": "android"
+    }
+  ]
+}
