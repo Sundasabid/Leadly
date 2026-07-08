@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -19,12 +21,10 @@ class NotificationPreferencesScreen extends ConsumerStatefulWidget {
 
 class _NotificationPreferencesScreenState
     extends ConsumerState<NotificationPreferencesScreen> {
-  // Null while the profile is still loading.
   bool? _notifyHotLeads;
   bool? _notifyFollowUpDue;
   bool? _notifyWeeklyInsight;
 
-  // Key of the toggle currently being saved; null when idle.
   String? _pendingKey;
   bool _saving = false;
   String? _error;
@@ -47,12 +47,10 @@ class _NotificationPreferencesScreenState
   Future<void> _toggle(String key, bool newValue) async {
     if (_saving) return;
 
-    // Snapshot for rollback on error.
     final prevHot = _notifyHotLeads!;
     final prevFollowUp = _notifyFollowUpDue!;
     final prevWeekly = _notifyWeeklyInsight!;
 
-    // Optimistic flip — switch moves immediately.
     setState(() {
       _saving = true;
       _pendingKey = key;
@@ -101,7 +99,6 @@ class _NotificationPreferencesScreenState
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileDataProvider);
 
-    // Pre-fill once data arrives if didChangeDependencies didn't catch it.
     ref.listen(profileDataProvider, (_, next) {
       if (_notifyHotLeads == null) {
         final profile = next.valueOrNull;
@@ -118,6 +115,7 @@ class _NotificationPreferencesScreenState
     return Scaffold(
       backgroundColor: AppColors.primaryLight,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             // ── Blue header ──────────────────────────────────────────────
@@ -140,9 +138,9 @@ class _NotificationPreferencesScreenState
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  const Text(
+                  Text(
                     'Notification Preferences',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -153,12 +151,12 @@ class _NotificationPreferencesScreenState
               ),
             ),
 
-            // ── White card ───────────────────────────────────────────────
+            // ── Grey body ────────────────────────────────────────────────
             Expanded(
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Color(0xFFF5F7FA),
                   borderRadius: BorderRadius.vertical(
                       top: Radius.circular(AppRadius.lg)),
                 ),
@@ -225,16 +223,16 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, AppSpacing.xl,
-          AppSpacing.xl, AppSpacing.xxl),
+          AppSpacing.lg, AppSpacing.xl,
+          AppSpacing.lg, AppSpacing.xxl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Choose which alerts you want to receive',
-            style: TextStyle(
+          Text(
+            'Choose which alerts to receive',
+            style: GoogleFonts.poppins(
               fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryLight,
             ),
           ),
@@ -249,35 +247,38 @@ class _Body extends StatelessWidget {
 
           const SizedBox(height: AppSpacing.xl),
 
-          _ToggleRow(
-            title: 'New hot lead alerts',
-            subtitle: 'Notify me when a lead is marked as hot.',
+          _NotifCard(
+            iconBg: const Color(0xFFFF6B35),
+            icon: LucideIcons.flame,
+            title: 'Hot Lead Alerts',
+            subtitle: 'Notify me when a lead is marked as hot',
             value: notifyHotLeads,
             isPending: pendingKey == 'hot',
             disabled: saving,
             onChanged: (v) => onToggle('hot', v),
           ),
-          const Divider(height: 1, color: AppColors.dividerLight),
-
-          _ToggleRow(
-            title: 'Follow-up due / overdue alerts',
-            subtitle: 'Notify me when a follow-up is due or overdue.',
+          const SizedBox(height: AppSpacing.md),
+          _NotifCard(
+            iconBg: const Color(0xFF3B82F6),
+            icon: LucideIcons.clock,
+            title: 'Follow-up Alerts',
+            subtitle: 'Notify me when a follow-up is due or overdue',
             value: notifyFollowUpDue,
             isPending: pendingKey == 'followup',
             disabled: saving,
             onChanged: (v) => onToggle('followup', v),
           ),
-          const Divider(height: 1, color: AppColors.dividerLight),
-
-          _ToggleRow(
-            title: 'Weekly insight summaries',
-            subtitle: 'Receive a weekly summary of your lead activity.',
+          const SizedBox(height: AppSpacing.md),
+          _NotifCard(
+            iconBg: const Color(0xFF8B5CF6),
+            icon: LucideIcons.barChart2,
+            title: 'Weekly Insights',
+            subtitle: 'Receive a weekly summary of your lead activity',
             value: notifyWeeklyInsight,
             isPending: pendingKey == 'weekly',
             disabled: saving,
             onChanged: (v) => onToggle('weekly', v),
           ),
-          const Divider(height: 1, color: AppColors.dividerLight),
 
           if (error != null) ...[
             const SizedBox(height: AppSpacing.lg),
@@ -303,9 +304,11 @@ class _Body extends StatelessWidget {
   }
 }
 
-// ── Toggle row ─────────────────────────────────────────────────────────────────
+// ── Notification card ──────────────────────────────────────────────────────────
 
-class _ToggleRow extends StatelessWidget {
+class _NotifCard extends StatelessWidget {
+  final Color iconBg;
+  final IconData icon;
   final String title;
   final String subtitle;
   final bool value;
@@ -313,7 +316,9 @@ class _ToggleRow extends StatelessWidget {
   final bool disabled;
   final ValueChanged<bool> onChanged;
 
-  const _ToggleRow({
+  const _NotifCard({
+    required this.iconBg,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.value,
@@ -324,65 +329,78 @@ class _ToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: disabled && !isPending
-                            ? AppColors.textDisabledLight
-                            : AppColors.textPrimaryLight,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: disabled && !isPending
-                        ? AppColors.textDisabledLight
-                        : AppColors.textSecondaryLight,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(width: AppSpacing.md),
-          // Replace the switch with a spinner while this specific row is saving.
-          if (isPending)
-            const Padding(
-              padding: EdgeInsets.only(top: 4),
-              child: SizedBox(
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: iconBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: disabled && !isPending
+                          ? AppColors.textDisabledLight
+                          : AppColors.textPrimaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: disabled && !isPending
+                          ? AppColors.textDisabledLight
+                          : AppColors.textSecondaryLight,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            if (isPending)
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: AppColors.primaryLight,
                 ),
+              )
+            else
+              Switch(
+                value: value,
+                onChanged: disabled ? null : onChanged,
+                activeColor: AppColors.primaryLight,
               ),
-            )
-          else
-            Switch(
-              value: value,
-              onChanged: disabled ? null : onChanged,
-              activeThumbColor: AppColors.primaryLight,
-              activeTrackColor: AppColors.primaryTintLight,
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

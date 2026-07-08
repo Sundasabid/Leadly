@@ -15,3 +15,28 @@ final insightsCacheProvider =
     return null;
   }
 });
+
+// All distinct weeks this agent has insights for, newest first.
+final availableWeeksProvider =
+    FutureProvider<List<DateTime>>((ref) async {
+  try {
+    return await ref.read(insightsRepositoryProvider).fetchAvailableWeeks();
+  } catch (e, st) {
+    debugPrint('Available weeks fetch failed: $e\n$st');
+    return [];
+  }
+});
+
+// Insights for a specific week identified by its period_start date.
+final insightsByPeriodProvider =
+    FutureProvider.family<InsightsCacheModel?, DateTime>(
+        (ref, periodStart) async {
+  try {
+    return await ref
+        .read(insightsRepositoryProvider)
+        .fetchByPeriod(periodStart);
+  } catch (e, st) {
+    debugPrint('Insights by period fetch failed: $e\n$st');
+    return null;
+  }
+});

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -81,9 +82,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  const Text(
+                  Text(
                     'Help & Support',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

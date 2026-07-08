@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../auth/data/profile_repository.dart';
+import '../../../auth/domain/models/profile_model.dart';
 import '../../../auth/presentation/providers/profile_state_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -29,9 +34,9 @@ class SettingsScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Settings',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -58,36 +63,32 @@ class SettingsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Profile card ────────────────────────────────────
+                      // ── Profile card ─────────────────────────────────────
                       profileAsync.when(
                         loading: () => const _ProfileCardSkeleton(),
-                        error: (err, _) => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
                         data: (profile) {
                           if (profile == null) return const SizedBox.shrink();
-                          return _ProfileCard(
-                            name: profile.name,
-                            agency: profile.agencyName,
-                            email: profile.email,
-                          );
+                          return _ProfileCard(profile: profile);
                         },
                       ),
 
                       const SizedBox(height: AppSpacing.xl),
 
-                      // ── Account section ─────────────────────────────────
+                      // ── Account section ──────────────────────────────────
                       _SectionLabel(label: 'Account'),
                       _SettingsRow(
-                        icon: Icons.person_outline_rounded,
+                        icon: LucideIcons.user,
                         label: 'Account Info',
                         onTap: () => context.push('/settings/account'),
                       ),
                       _SettingsRow(
-                        icon: Icons.lock_outline_rounded,
+                        icon: LucideIcons.lock,
                         label: 'Security',
                         onTap: () => context.push('/settings/security'),
                       ),
                       _SettingsRow(
-                        icon: Icons.shield_outlined,
+                        icon: LucideIcons.shield,
                         label: 'Privacy & Data',
                         onTap: () => context.push('/settings/privacy'),
                         isLast: true,
@@ -95,16 +96,16 @@ class SettingsScreen extends ConsumerWidget {
 
                       const SizedBox(height: AppSpacing.xl),
 
-                      // ── Preferences section ─────────────────────────────
+                      // ── Preferences section ──────────────────────────────
                       _SectionLabel(label: 'Preferences'),
                       _SettingsRow(
-                        icon: Icons.notifications_outlined,
+                        icon: LucideIcons.bell,
                         label: 'Notification Preferences',
                         onTap: () =>
                             context.push('/settings/notifications'),
                       ),
                       _SettingsRow(
-                        icon: Icons.alarm_outlined,
+                        icon: LucideIcons.clock,
                         label: 'Reminders',
                         onTap: () => context.push('/settings/reminders'),
                         isLast: true,
@@ -112,10 +113,10 @@ class SettingsScreen extends ConsumerWidget {
 
                       const SizedBox(height: AppSpacing.xl),
 
-                      // ── Support section ─────────────────────────────────
+                      // ── Support section ──────────────────────────────────
                       _SectionLabel(label: 'Support'),
                       _SettingsRow(
-                        icon: Icons.help_outline_rounded,
+                        icon: LucideIcons.helpCircle,
                         label: 'Help & Support',
                         onTap: () => context.push('/settings/help'),
                         isLast: true,
@@ -123,7 +124,7 @@ class SettingsScreen extends ConsumerWidget {
 
                       const SizedBox(height: AppSpacing.xl),
 
-                      // ── Logout ──────────────────────────────────────────
+                      // ── Logout ───────────────────────────────────────────
                       const _LogoutRow(),
                     ],
                   ),
@@ -139,19 +140,118 @@ class SettingsScreen extends ConsumerWidget {
 
 // ── Profile card ───────────────────────────────────────────────────────────────
 
-class _ProfileCard extends StatelessWidget {
-  final String name;
-  final String agency;
-  final String? email;
+class _ProfileCard extends ConsumerStatefulWidget {
+  final ProfileModel profile;
+  const _ProfileCard({required this.profile});
 
-  const _ProfileCard({
-    required this.name,
-    required this.agency,
-    this.email,
-  });
+  @override
+  ConsumerState<_ProfileCard> createState() => _ProfileCardState();
+}
+
+class _ProfileCardState extends ConsumerState<_ProfileCard> {
+  bool _uploading = false;
+
+  Future<void> _showPickerSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryTintLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.camera,
+                    color: AppColors.primaryLight, size: 20),
+              ),
+              title: Text('Camera',
+                  style: GoogleFonts.poppins(
+                      fontSize: 15, fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUpload(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryTintLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.image,
+                    color: AppColors.primaryLight, size: 20),
+              ),
+              title: Text('Gallery',
+                  style: GoogleFonts.poppins(
+                      fontSize: 15, fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUpload(ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUpload(ImageSource source) async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 800,
+    );
+    if (file == null || !mounted) return;
+
+    setState(() => _uploading = true);
+    try {
+      final bytes = await file.readAsBytes();
+      await ref.read(profileRepositoryProvider).uploadAvatar(bytes);
+      if (!mounted) return;
+      ref.invalidate(profileDataProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Upload failed: ${e.toString().replaceFirst('Exception: ', '')}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final profile = widget.profile;
+    final initials =
+        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : '?';
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -161,23 +261,74 @@ class _ProfileCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Avatar initial
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+          // Avatar with camera overlay
+          GestureDetector(
+            onTap: _uploading ? null : _showPickerSheet,
+            child: Stack(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: _uploading
+                      ? const Center(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2),
+                          ),
+                        )
+                      : profile.avatarUrl != null
+                          ? ClipOval(
+                              child: Image.network(
+                                profile.avatarUrl!,
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Center(
+                                  child: Text(
+                                    initials,
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Center(
+                              child: Text(
+                                initials,
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                 ),
-              ),
+                // Camera overlay badge
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(LucideIcons.camera,
+                        color: Colors.white, size: 12),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -186,10 +337,10 @@ class _ProfileCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
-                  style: const TextStyle(
+                  profile.name,
+                  style: GoogleFonts.poppins(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryLight,
                   ),
                   maxLines: 1,
@@ -197,7 +348,7 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  agency,
+                  profile.agencyName,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondaryLight,
@@ -205,10 +356,10 @@ class _ProfileCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (email != null) ...[
+                if (profile.email != null) ...[
                   const SizedBox(height: 1),
                   Text(
-                    email!,
+                    profile.email!,
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textDisabledLight,
@@ -232,7 +383,7 @@ class _ProfileCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80,
+      height: 88,
       decoration: BoxDecoration(
         color: AppColors.surfaceAltLight,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -289,31 +440,31 @@ class _SettingsRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.md, horizontal: AppSpacing.xs),
+                vertical: 12, horizontal: AppSpacing.xs),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceAltLight,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryTintLight,
+                    shape: BoxShape.circle,
                   ),
                   child: Icon(icon,
-                      color: AppColors.textSecondaryLight, size: 18),
+                      color: AppColors.primaryLight, size: 22),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     label,
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimaryLight,
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
+                const Icon(LucideIcons.chevronRight,
                     color: AppColors.textDisabledLight, size: 20),
               ],
             ),
@@ -342,7 +493,6 @@ class _LogoutRowState extends ConsumerState<_LogoutRow> {
     setState(() => _loading = true);
     try {
       await ref.read(authRepositoryProvider).signOut();
-      // Router guard (authStateProvider) redirects to /auth/login automatically.
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }

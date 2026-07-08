@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -17,9 +19,7 @@ class RemindersScreen extends ConsumerStatefulWidget {
 }
 
 class _RemindersScreenState extends ConsumerState<RemindersScreen> {
-  // Null while the profile is still loading.
   int? _selected;
-  // Set to the tapped option's hours while a save is in flight; null otherwise.
   int? _pendingHours;
   bool _saving = false;
   String? _error;
@@ -72,7 +72,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileDataProvider);
 
-    // Pre-fill once data arrives if didChangeDependencies didn't catch it.
     ref.listen(profileDataProvider, (_, next) {
       if (_selected == null) {
         final profile = next.valueOrNull;
@@ -85,6 +84,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryLight,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             // ── Blue header ──────────────────────────────────────────────
@@ -108,9 +108,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  const Text(
+                  Text(
                     'Reminders',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -121,12 +121,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ),
             ),
 
-            // ── White card ───────────────────────────────────────────────
+            // ── Grey body ────────────────────────────────────────────────
             Expanded(
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Color(0xFFF5F7FA),
                   borderRadius: BorderRadius.vertical(
                       top: Radius.circular(AppRadius.lg)),
                 ),
@@ -176,10 +176,10 @@ class _Body extends StatelessWidget {
   final ValueChanged<int> onSelect;
 
   static const _options = [
-    (hours: 4,  label: 'Every 4 hours'),
-    (hours: 12, label: 'Every 12 hours'),
-    (hours: 24, label: 'Every 24 hours'),
-    (hours: 48, label: 'Every 48 hours'),
+    (hours: 4,  short: '4h',  label: 'Every 4 hours'),
+    (hours: 12, short: '12h', label: 'Every 12 hours'),
+    (hours: 24, short: '24h', label: 'Every 24 hours'),
+    (hours: 48, short: '48h', label: 'Every 48 hours'),
   ];
 
   const _Body({
@@ -194,16 +194,16 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, AppSpacing.xl,
-          AppSpacing.xl, AppSpacing.xxl),
+          AppSpacing.lg, AppSpacing.xl,
+          AppSpacing.lg, AppSpacing.xxl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Overdue follow-up reminders',
-            style: TextStyle(
+          Text(
+            'Follow-up Reminders',
+            style: GoogleFonts.poppins(
               fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryLight,
             ),
           ),
@@ -215,15 +215,13 @@ class _Body extends StatelessWidget {
               color: AppColors.textSecondaryLight,
             ),
           ),
-
           const SizedBox(height: AppSpacing.xl),
 
-          // Option list — entire group disabled while a save is in flight.
-          ...(_options.map((opt) => _OptionRow(
-                label: opt.label,
+          ...(_options.map((opt) => _ReminderCard(
                 hours: opt.hours,
+                shortLabel: opt.short,
+                fullLabel: opt.label,
                 isSelected: opt.hours == selected,
-                // Spinner only on the exactly-tapped option.
                 isSaving: opt.hours == pendingHours,
                 disabled: saving,
                 onTap: () => onSelect(opt.hours),
@@ -253,19 +251,21 @@ class _Body extends StatelessWidget {
   }
 }
 
-// ── Option row ─────────────────────────────────────────────────────────────────
+// ── Reminder card ──────────────────────────────────────────────────────────────
 
-class _OptionRow extends StatelessWidget {
-  final String label;
+class _ReminderCard extends StatelessWidget {
   final int hours;
+  final String shortLabel;
+  final String fullLabel;
   final bool isSelected;
   final bool isSaving;
   final bool disabled;
   final VoidCallback onTap;
 
-  const _OptionRow({
-    required this.label,
+  const _ReminderCard({
     required this.hours,
+    required this.shortLabel,
+    required this.fullLabel,
     required this.isSelected,
     required this.isSaving,
     required this.disabled,
@@ -274,63 +274,74 @@ class _OptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: disabled ? null : onTap,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.md, horizontal: AppSpacing.xs),
-            child: Row(
+    return GestureDetector(
+      onTap: disabled ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryTintLight : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryLight : AppColors.borderLight,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Radio indicator
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.primaryLight
-                          : AppColors.borderLight,
-                      width: isSelected ? 6 : 2,
-                    ),
+                Text(
+                  shortLabel,
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? AppColors.primaryLight
+                        : AppColors.textPrimaryLight,
+                    height: 1,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                      color: disabled && !isSelected
-                          ? AppColors.textDisabledLight
-                          : AppColors.textPrimaryLight,
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  fullLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isSelected
+                        ? AppColors.primaryLight
+                        : AppColors.textSecondaryLight,
                   ),
                 ),
-                // Spinner only on the currently-saving option (the
-                // one whose hours != selected before the tap resolved).
-                if (isSaving)
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primaryLight,
-                    ),
-                  ),
               ],
             ),
-          ),
+            const Spacer(),
+            if (isSaving)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primaryLight,
+                ),
+              )
+            else if (isSelected)
+              const Icon(LucideIcons.checkCircle2,
+                  color: AppColors.primaryLight, size: 22),
+          ],
         ),
-        const Divider(height: 1, color: AppColors.dividerLight),
-      ],
+      ),
     );
   }
 }

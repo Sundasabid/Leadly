@@ -179,19 +179,23 @@ class AppTheme {
       // Divider
       dividerTheme: DividerThemeData(color: outline, thickness: 1, space: 1),
 
-      // Text theme — all Inter via GoogleFonts
+      // Text theme — headings: Poppins, body/labels: Inter
       textTheme: GoogleFonts.interTextTheme(TextTheme(
-        displayLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: textPrimary),
-        displayMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: textPrimary),
-        headlineLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textPrimary),
-        headlineMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary),
-        headlineSmall: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: textPrimary),
-        bodyLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: textPrimary),
+        bodyLarge:  TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: textPrimary),
         bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textPrimary),
-        bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: textSecondary),
+        bodySmall:  TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: textSecondary),
         labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textSecondary),
         labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textSecondary),
-      )),
+      )).copyWith(
+        displayLarge:  GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w700, color: textPrimary),
+        displayMedium: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: textPrimary),
+        displaySmall:  GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: textPrimary),
+        headlineLarge:  GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: textPrimary),
+        headlineMedium: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary),
+        headlineSmall:  GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: textPrimary),
+        titleLarge:  GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary),
+        titleMedium: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500, color: textPrimary),
+      ),
     );
   }
 }

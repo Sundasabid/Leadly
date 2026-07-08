@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -56,6 +58,27 @@ class ProfileRepository {
     }).eq('id', user.id);
   }
 
+  Future<void> updateAvatarUrl(String url) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+    await _client.from('profiles').update({
+      'avatar_url': url,
+    }).eq('id', user.id);
+  }
+
+  Future<String> uploadAvatar(Uint8List bytes) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+    final path = '${user.id}/avatar.jpg';
+    await _client.storage.from('avatars').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
+        );
+    final url = _client.storage.from('avatars').getPublicUrl(path);
+    await updateAvatarUrl(url);
+    return url;
+  }
 }
 
 final profileRepositoryProvider =

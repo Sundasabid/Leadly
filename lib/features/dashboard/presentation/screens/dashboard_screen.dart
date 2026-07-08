@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -19,7 +21,6 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(dashboardStatsProvider);
     final unreadCount = ref.watch(unreadCountProvider);
-    // Extra bottom clearance so content doesn't hide behind curved nav bar.
     final bottomPad = MediaQuery.of(context).padding.bottom + 80;
 
     return Scaffold(
@@ -36,9 +37,9 @@ class DashboardScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Dashboard',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -150,11 +151,11 @@ class DashboardScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // ── Stats grid ─────────────────────────────
-                          const Text(
+                          Text(
                             'Overview',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                            style: GoogleFonts.poppins(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryLight,
                             ),
                           ),
@@ -166,9 +167,7 @@ class DashboardScreen extends ConsumerWidget {
                                 child: _StatCard(
                                   label: 'Total Leads',
                                   value: stats.totalLeads,
-                                  icon: Icons.people_rounded,
-                                  iconBg: AppColors.primaryTintLight,
-                                  iconColor: AppColors.primaryLight,
+                                  icon: LucideIcons.users,
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.md),
@@ -176,9 +175,7 @@ class DashboardScreen extends ConsumerWidget {
                                 child: _StatCard(
                                   label: 'Hot Leads',
                                   value: stats.hotLeads,
-                                  icon: Icons.local_fire_department_rounded,
-                                  iconBg: const Color(0xFFFFEDD5),
-                                  iconColor: const Color(0xFFEA580C),
+                                  icon: LucideIcons.flame,
                                 ),
                               ),
                             ],
@@ -190,9 +187,7 @@ class DashboardScreen extends ConsumerWidget {
                                 child: _StatCard(
                                   label: 'New This Week',
                                   value: stats.newThisWeek,
-                                  icon: Icons.person_add_rounded,
-                                  iconBg: AppColors.successBgLight,
-                                  iconColor: AppColors.successTextLight,
+                                  icon: LucideIcons.userPlus,
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.md),
@@ -200,9 +195,7 @@ class DashboardScreen extends ConsumerWidget {
                                 child: _StatCard(
                                   label: 'Warm Leads',
                                   value: stats.warmLeads,
-                                  icon: Icons.trending_up_rounded,
-                                  iconBg: AppColors.warningBgLight,
-                                  iconColor: AppColors.warningTextLight,
+                                  icon: LucideIcons.trendingUp,
                                 ),
                               ),
                             ],
@@ -218,11 +211,11 @@ class DashboardScreen extends ConsumerWidget {
                             mainAxisAlignment:
                                 MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 'Recent Leads',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimaryLight,
                                 ),
                               ),
@@ -281,8 +274,6 @@ class _InsightsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final insightsAsync = ref.watch(insightsCacheProvider);
 
-    // While loading or on any error, render nothing — dashboard stays usable.
-    // On null data (no cron row yet), also render nothing.
     return insightsAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, stack) => const SizedBox.shrink(),
@@ -291,11 +282,11 @@ class _InsightsSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Market Trends',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+              style: GoogleFonts.poppins(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryLight,
               ),
             ),
@@ -327,22 +318,29 @@ class _InsightCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surfaceAltLight,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.borderLight),
+          border: Border(
+            left: const BorderSide(color: AppColors.primaryLight, width: 3),
+            top: BorderSide(color: AppColors.borderLight),
+            right: BorderSide(color: AppColors.borderLight),
+            bottom: BorderSide(color: AppColors.borderLight),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryTintLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.auto_graph_rounded,
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                LucideIcons.sparkles,
                 color: AppColors.primaryLight,
                 size: 22,
               ),
@@ -352,15 +350,16 @@ class _InsightCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Weekly AI Insight',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondaryLight,
+                  Text(
+                    'WEEKLY AI INSIGHT',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryLight,
+                      letterSpacing: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     sentence,
                     style: const TextStyle(
@@ -400,7 +399,7 @@ class _InsightCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.only(top: 2),
               child: Icon(
-                Icons.chevron_right_rounded,
+                LucideIcons.chevronRight,
                 color: AppColors.textSecondaryLight,
                 size: 20,
               ),
@@ -412,23 +411,17 @@ class _InsightCard extends StatelessWidget {
   }
 }
 
-// ── Change percentage badge ────────────────────────────────────────────────────
-
 // ── Stat card ──────────────────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
   final String label;
   final int value;
   final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
 
   const _StatCard({
     required this.label,
     required this.value,
     required this.icon,
-    required this.iconBg,
-    required this.iconColor,
   });
 
   @override
@@ -436,29 +429,35 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surfaceAltLight,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.borderLight),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF1B3A8A),
+            Color(0xFF173175),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1B3A8A).withValues(alpha: 0.28),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: iconBg,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 26),
-          ),
+          Icon(icon, color: Colors.white, size: 28),
           const SizedBox(height: AppSpacing.md),
           Text(
             value.toString(),
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimaryLight,
+            style: GoogleFonts.poppins(
+              fontSize: 36,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
               height: 1,
             ),
           ),
@@ -466,8 +465,8 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondaryLight,
+              fontSize: 13,
+              color: Color(0xBFFFFFFF),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -497,12 +496,12 @@ class _RecentLeadCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Avatar initial
+            // Avatar — navy background, white initials
             Container(
               width: 44,
               height: 44,
               decoration: const BoxDecoration(
-                color: AppColors.primaryTintLight,
+                color: AppColors.primaryLight,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -511,7 +510,7 @@ class _RecentLeadCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryLight,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -533,7 +532,7 @@ class _RecentLeadCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${lead.areaSociety}  •  ${lead.phone}',
+                    '${lead.areaSociety}  -  ${lead.phone}',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondaryLight,

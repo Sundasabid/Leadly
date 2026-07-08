@@ -4,7 +4,7 @@ class AppColors {
   AppColors._();
 
   // --- Light Mode ---
-  static const Color primaryLight = Color(0xFF1A56DB);
+  static const Color primaryLight = Color(0xFF1B3A8A);
   static const Color primaryPressedLight = Color(0xFF1347B5);
   static const Color primaryTintLight = Color(0xFFEFF6FF);
   static const Color backgroundLight = Color(0xFFFFFFFF);
@@ -75,7 +75,7 @@ class AppColors {
 
   // AI badge
   static const Color aiBadgeBgLight = Color(0xFFEFF6FF);
-  static const Color aiBadgeTextLight = Color(0xFF1A56DB);
+  static const Color aiBadgeTextLight = Color(0xFF1B3A8A);
   static const Color aiBadgeBgDark = Color(0x293B82F6);
   static const Color aiBadgeTextDark = Color(0xFF3B82F6);
 }

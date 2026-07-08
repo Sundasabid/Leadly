@@ -183,6 +183,34 @@ class InsightsRepository {
     if (row == null) return null;
     return InsightsCacheModel.fromJson(Map<String, dynamic>.from(row as Map));
   }
+
+  /// Returns all period_start dates this agent has insights for, newest first.
+  /// RLS restricts results to agent_id = auth.uid() — no explicit filter needed.
+  Future<List<DateTime>> fetchAvailableWeeks() async {
+    final rows = await _client
+        .from('insights_cache')
+        .select('period_start')
+        .order('period_start', ascending: false);
+    return (rows as List)
+        .map((row) => DateTime.parse(row['period_start'] as String))
+        .toList();
+  }
+
+  /// Fetches insights for the exact week starting on [periodStart].
+  /// Returns null if no row exists for that date.
+  Future<InsightsCacheModel?> fetchByPeriod(DateTime periodStart) async {
+    final dateStr =
+        '${periodStart.year.toString().padLeft(4, '0')}-'
+        '${periodStart.month.toString().padLeft(2, '0')}-'
+        '${periodStart.day.toString().padLeft(2, '0')}';
+    final row = await _client
+        .from('insights_cache')
+        .select()
+        .eq('period_start', dateStr)
+        .maybeSingle();
+    if (row == null) return null;
+    return InsightsCacheModel.fromJson(Map<String, dynamic>.from(row as Map));
+  }
 }
 
 final insightsRepositoryProvider = Provider<InsightsRepository>((ref) {

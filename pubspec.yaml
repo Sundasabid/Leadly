@@ -42,10 +42,12 @@ dependencies:
 
   # Images
   cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
 
   # Google Sign-In & URL launching
   google_sign_in: ^6.2.2
   google_fonts: ^8.1.0
+  lucide_flutter: ^1.23.0
   url_launcher: ^6.3.1
 
   # Animated curved bottom navigation bar
