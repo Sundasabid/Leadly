@@ -487,7 +487,7 @@ class _PermissionDeniedView extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 const Text(
-                  'Leadly needs microphone permission to record voice notes. Please enable it in your device settings.',
+                  'Propex needs microphone permission to record voice notes. Please enable it in your device settings.',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondaryLight,

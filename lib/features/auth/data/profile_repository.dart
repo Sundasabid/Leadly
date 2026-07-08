@@ -75,7 +75,9 @@ class ProfileRepository {
           bytes,
           fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
         );
-    final url = _client.storage.from('avatars').getPublicUrl(path);
+    final baseUrl = _client.storage.from('avatars').getPublicUrl(path);
+    // Cache-bust so Image.network always re-fetches after upload
+    final url = '$baseUrl?t=${DateTime.now().millisecondsSinceEpoch}';
     await updateAvatarUrl(url);
     return url;
   }

@@ -69,7 +69,11 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      context.pop();
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/dashboard');
+      }
     } on AuthException catch (e) {
       setState(() {
         _saving = false;
@@ -104,7 +108,13 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => context.pop(),
+                    onTap: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/dashboard');
+                      }
+                    },
                     child: Container(
                       width: 38,
                       height: 38,

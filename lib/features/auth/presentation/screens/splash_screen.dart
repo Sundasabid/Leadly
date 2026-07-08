@@ -63,85 +63,62 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: const Color(0xFF1B3A8A),
       body: FadeTransition(
         opacity: _fadeAnim,
-        child: Column(
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // ── Top 55%: city image + bottom fade ─────────────────────────
-            SizedBox(
-              height: size.height * 0.55,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/building.avif',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  // transparent → navy fade over last 80px
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      height: 80,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Color(0xFF1B3A8A)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            // ── Full-screen city image ─────────────────────────────────────
+            Image.asset(
+              'assets/images/splash_city.png',
+              fit: BoxFit.cover,
             ),
 
-            // ── Bottom half: branding + spinner ───────────────────────────
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'LEADLY',
-                    style: GoogleFonts.poppins(
-                      fontSize: 42,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 4,
-                    ),
+            // ── Navy overlay so white text stays readable ──────────────────
+            Container(
+              color: const Color(0xFF1B3A8A).withValues(alpha: 0.55),
+            ),
+
+            // ── Branding + spinner centred on screen ───────────────────────
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'PROPEX',
+                  style: GoogleFonts.poppins(
+                    fontSize: 42,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 4,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'AI-Powered Real Estate CRM',
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withValues(alpha: 0.70),
-                    ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'AI-Powered Real Estate CRM',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withValues(alpha: 0.70),
                   ),
-                  const SizedBox(height: 32),
-                  Container(
-                    width: 60,
-                    height: 1,
-                    color: Colors.white.withValues(alpha: 0.20),
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  width: 60,
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.20),
+                ),
+                const SizedBox(height: 32),
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
                   ),
-                  const SizedBox(height: 32),
-                  const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),

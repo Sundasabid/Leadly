@@ -45,7 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final redirectTo = kIsWeb
           ? '${Uri.base.origin}/'
-          : 'com.leadly.leadly://login-callback';
+          : 'com.propex.propex://login-callback';
 
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
@@ -85,12 +85,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final res = await Supabase.instance.client.auth.signUp(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
+          emailRedirectTo: 'com.propex.propex://login-callback',
         );
         if (!mounted) return;
         if (res.session != null) {
           await _navigateAfterLogin();
+        } else if (res.user?.identities?.isEmpty == true) {
+          // Supabase returns empty identities when the email is already registered
+          // but email confirmation is ON — no email is sent in this case.
+          setState(() {
+            _errorMessage = 'An account with this email already exists. Please log in instead.';
+            _loading = false;
+          });
         } else {
-          // Email confirmation required
+          // New account - email confirmation required
           setState(() {
             _emailConfirmationSent = true;
             _loading = false;
@@ -172,7 +180,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text(
-                              'LEADLY',
+                              'PROPEX',
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.w800,
@@ -681,7 +689,7 @@ class _EmailConfirmationView extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'We sent a confirmation link to\n$email\n\nClick the link to activate your account.',
+                'If this email is new, check your inbox for a confirmation link.\n\nIf you already have an account, please log in instead.',
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF6B7280),

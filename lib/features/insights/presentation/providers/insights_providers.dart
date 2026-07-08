@@ -7,7 +7,7 @@ import '../../data/insights_repository.dart';
 // Errors are caught silently and return null so the dashboard
 // never shows an error banner for this non-critical feature.
 final insightsCacheProvider =
-    FutureProvider<InsightsCacheModel?>((ref) async {
+    FutureProvider.autoDispose<InsightsCacheModel?>((ref) async {
   try {
     return await ref.read(insightsRepositoryProvider).fetchLatest();
   } catch (e, st) {
@@ -18,7 +18,7 @@ final insightsCacheProvider =
 
 // All distinct weeks this agent has insights for, newest first.
 final availableWeeksProvider =
-    FutureProvider<List<DateTime>>((ref) async {
+    FutureProvider.autoDispose<List<DateTime>>((ref) async {
   try {
     return await ref.read(insightsRepositoryProvider).fetchAvailableWeeks();
   } catch (e, st) {

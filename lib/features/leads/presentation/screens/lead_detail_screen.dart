@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -28,8 +30,6 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
   bool _deleting = false;
   String? _statusError;
 
-  // ── Status update ───────────────────────────────────────────────────────────
-
   Future<void> _updateStatus(String newStatus) async {
     setState(() {
       _statusUpdating = true;
@@ -53,8 +53,6 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
-  // ── Edit ────────────────────────────────────────────────────────────────────
-
   Future<void> _onEdit(LeadModel lead) async {
     final schedule = await context.push<bool>(
         '/leads/${lead.id}/edit', extra: lead);
@@ -67,105 +65,137 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
-
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _confirmDelete(String leadName) async {
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        contentPadding:
-            const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, 0),
-        actionsPadding: EdgeInsets.zero,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: const BoxDecoration(
-                color: AppColors.dangerBgLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.delete_rounded,
-                color: AppColors.dangerTextLight,
-                size: 30,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Text(
-              'Delete Lead?',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimaryLight,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'This lead and all its data will be permanently deleted. This cannot be undone.',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondaryLight,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
-            child: Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.dangerTextLight,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                    child: const Text(
-                      'Yes, Delete Lead',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: AppColors.textSecondaryLight,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(24)),
           ),
-        ],
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Trash icon circle
+              Container(
+                margin: const EdgeInsets.only(top: 20),
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEF2F2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.trash2,
+                  color: Color(0xFFEF4444),
+                  size: 28,
+                ),
+              ),
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  'Delete Lead?',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF111827),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              // Description
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: Text(
+                  'This will permanently delete $leadName and all associated follow-ups. This cannot be undone.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFF6B7280),
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Delete button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF4444),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Delete',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Cancel button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF3F4F6),
+                    foregroundColor: const Color(0xFF374151),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF374151),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
 
@@ -189,8 +219,6 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
-  // ── Quick actions ───────────────────────────────────────────────────────────
-
   Future<void> _launchCall(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) await launchUrl(uri);
@@ -204,19 +232,18 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
     }
   }
 
-  // ── Build ───────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final leadAsync = ref.watch(leadDetailProvider(widget.leadId));
 
     return Scaffold(
-      backgroundColor: AppColors.primaryLight,
+      backgroundColor: const Color(0xFFF0F4F8),
       body: SafeArea(
+        bottom: false,
         child: leadAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(
-                color: Colors.white, strokeWidth: 2),
+                color: AppColors.primaryLight, strokeWidth: 2),
           ),
           error: (e, _) => Center(
             child: Padding(
@@ -225,19 +252,22 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.wifi_off_rounded,
-                      color: Colors.white54, size: 48),
+                      color: Color(0xFF9CA3AF), size: 48),
                   const SizedBox(height: AppSpacing.lg),
-                  const Text('Could not load lead',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Could not load lead',
+                    style: TextStyle(
+                      color: Color(0xFF374151),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   TextButton(
                     onPressed: () =>
                         ref.invalidate(leadDetailProvider(widget.leadId)),
                     child: const Text('Retry',
-                        style: TextStyle(color: Colors.white70)),
+                        style: TextStyle(color: AppColors.primaryLight)),
                   ),
                 ],
               ),
@@ -250,12 +280,13 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text('Lead not found.',
-                        style: TextStyle(color: Colors.white70)),
+                        style: TextStyle(color: Color(0xFF6B7280))),
                     const SizedBox(height: AppSpacing.md),
                     TextButton(
                       onPressed: () => context.go('/leads'),
                       child: const Text('Back to Leads',
-                          style: TextStyle(color: Colors.white)),
+                          style: TextStyle(
+                              color: AppColors.primaryLight)),
                     ),
                   ],
                 ),
@@ -267,7 +298,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
               deleting: _deleting,
               statusError: _statusError,
               onStatusTap: _updateStatus,
-              onDelete: _confirmDelete,
+              onDelete: () => _confirmDelete(lead.name),
               onEdit: () => _onEdit(lead),
               onCall: () => _launchCall(lead.phone),
               onWhatsApp: () => _launchWhatsApp(lead.phone),
@@ -308,10 +339,9 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // ── Blue header ──────────────────────────────────────────────────
+        // ── Navigation row (on #F0F4F8 bg) ──────────────────────────────
         Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
               // Back
@@ -321,28 +351,21 @@ class _Body extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: const Icon(Icons.arrow_back_rounded,
-                      color: Colors.white, size: 20),
+                      color: Color(0xFF374151), size: 20),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              // Lead name
-              Expanded(
-                child: Text(
-                  lead.name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
+              const Spacer(),
               // Edit
               GestureDetector(
                 onTap: onEdit,
@@ -350,15 +373,22 @@ class _Body extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: const Icon(Icons.edit_rounded,
-                      color: Colors.white, size: 18),
+                      color: Color(0xFF374151), size: 18),
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              // Delete
+              const SizedBox(width: 8),
+              // Delete (or spinner while deleting)
               if (deleting)
                 const SizedBox(
                   width: 38,
@@ -368,7 +398,7 @@ class _Body extends StatelessWidget {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
+                          color: AppColors.primaryLight, strokeWidth: 2),
                     ),
                   ),
                 )
@@ -379,229 +409,327 @@ class _Body extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: const Icon(Icons.delete_rounded,
-                        color: Colors.white, size: 20),
+                        color: Color(0xFFEF4444), size: 20),
                   ),
                 ),
             ],
           ),
         ),
 
-        // ── White card ───────────────────────────────────────────────────
+        // ── Scrollable cards ─────────────────────────────────────────────
         Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.lg)),
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl, AppSpacing.xl,
-                  AppSpacing.xl, AppSpacing.xxl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Phone + quick actions ──────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Phone',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textSecondaryLight,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              lead.phone,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimaryLight,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Call button
-                      GestureDetector(
-                        onTap: onCall,
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.md),
-                            border: Border.all(
-                                color: const Color(0xFF86EFAC)),
-                          ),
-                          child: const Icon(
-                            Icons.phone_rounded,
-                            color: Color(0xFF16A34A),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      // WhatsApp button
-                      GestureDetector(
-                        onTap: onWhatsApp,
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.md),
-                            border: Border.all(
-                                color: const Color(0xFF86EFAC)),
-                          ),
-                          child: Center(
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/image.png',
-                                width: 28,
-                                height: 28,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── TOP HERO CARD ─────────────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name + status badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              lead.name,
+                              style: GoogleFonts.poppins(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF111827),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _statusBg(lead.status),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
+                            ),
+                            child: Text(
+                              _capitalize(lead.status),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _statusFg(lead.status),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
 
-                  const SizedBox(height: AppSpacing.xl),
-                  const _Divider(),
-                  const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: 12),
+                      const Divider(
+                          height: 1,
+                          thickness: 0.5,
+                          color: Color(0xFFF3F4F6)),
+                      const SizedBox(height: 12),
 
-                  // ── Info fields ──────────────────────────────────────
-                  _InfoRow(
-                      label: 'Area / Society',
-                      value: lead.areaSociety),
-                  _InfoRow(
-                      label: 'Property Type',
-                      value: _capitalize(lead.propertyType)),
-                  _InfoRow(
-                      label: 'Intent',
-                      value: _capitalize(lead.intent)),
-                  _InfoRow(
-                      label: 'Timeline',
-                      value: _timelineDisplay(lead.timeline)),
-                  if (lead.budgetPkr != null)
-                    _InfoRow(
-                        label: 'Budget',
-                        value: _formatBudget(lead.budgetPkr!)),
-                  _InfoRow(
-                      label: 'Source',
-                      value: _capitalize(lead.source)),
-                  _InfoRow(
-                    label: 'Added',
-                    value: _formatDate(lead.createdAt),
-                    last: lead.notes == null || lead.notes!.isEmpty,
+                      // Phone + action circles
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.phone,
+                              size: 14, color: Color(0xFF1B3A8A)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              lead.phone,
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                color: const Color(0xFF374151),
+                              ),
+                            ),
+                          ),
+                          // Call circle
+                          GestureDetector(
+                            onTap: onCall,
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFFEEF2FF),
+                              ),
+                              child: const Icon(
+                                LucideIcons.phone,
+                                color: Color(0xFF1B3A8A),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // WhatsApp circle
+                          GestureDetector(
+                            onTap: onWhatsApp,
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF25D366),
+                              ),
+                              child: const Center(
+                                child: FaIcon(
+                                  FontAwesomeIcons.whatsapp,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  if (lead.notes != null && lead.notes!.isNotEmpty)
-                    _InfoRow(
-                        label: 'Notes',
-                        value: lead.notes!,
-                        last: true),
+                ),
 
-                  const SizedBox(height: AppSpacing.xl),
-                  const _Divider(),
-                  const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 12),
 
-                  // ── Status ───────────────────────────────────────────
-                  const Text(
-                    'Status',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondaryLight,
-                    ),
+                // ── INFO CARD ─────────────────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _InfoRow(
+                          label: 'Area / Society',
+                          value: lead.areaSociety),
+                      _InfoRow(
+                          label: 'Property Type',
+                          value: _capitalize(lead.propertyType)),
+                      _InfoRow(
+                          label: 'Intent',
+                          value: _capitalize(lead.intent)),
+                      _InfoRow(
+                          label: 'Timeline',
+                          value: _timelineDisplay(lead.timeline)),
+                      if (lead.budgetPkr != null)
+                        _InfoRow(
+                            label: 'Budget',
+                            value: _formatBudget(lead.budgetPkr!)),
+                      _InfoRow(
+                          label: 'Source',
+                          value: _capitalize(lead.source)),
+                      _InfoRow(
+                        label: 'Added',
+                        value: _formatDate(lead.createdAt),
+                        last: lead.notes == null ||
+                            lead.notes!.isEmpty,
+                      ),
+                      if (lead.notes != null &&
+                          lead.notes!.isNotEmpty)
+                        _NotesRow(notes: lead.notes!),
+                    ],
+                  ),
+                ),
 
-                  if (statusUpdating)
-                    const SizedBox(
-                      height: 44,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primaryLight,
-                          strokeWidth: 2,
+                const SizedBox(height: 12),
+
+                // ── STATUS CARD ───────────────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'UPDATE STATUS',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF9CA3AF),
+                          letterSpacing: 1.0,
                         ),
                       ),
-                    )
-                  else
-                    _StatusRow(
-                      current: lead.status,
-                      onTap: onStatusTap,
-                    ),
-
-                  if (statusError != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.dangerBgLight,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        statusError!,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.dangerTextLight,
+                      const SizedBox(height: 10),
+                      if (statusUpdating)
+                        const SizedBox(
+                          height: 32,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                                color: AppColors.primaryLight,
+                                strokeWidth: 2),
+                          ),
+                        )
+                      else
+                        _StatusChips(
+                            current: lead.status,
+                            onTap: onStatusTap),
+                      if (statusError != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Container(
+                          width: double.infinity,
+                          padding:
+                              const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: AppColors.dangerBgLight,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Text(
+                            statusError!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.dangerTextLight,
+                            ),
+                          ),
                         ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── SCHEDULE FOLLOW-UP BUTTON ─────────────────────────────
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1B3A8A)
+                            .withValues(alpha: 0.30),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                  ],
-
-                  const SizedBox(height: AppSpacing.xl),
-                  const _Divider(),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // ── Schedule Follow-up ────────────────────────────────
-                  SizedBox(
+                    ],
+                  ),
+                  child: SizedBox(
                     width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
+                    height: 52,
+                    child: ElevatedButton(
                       onPressed: () => showScheduleFollowUpSheet(
                         context,
                         leadId: lead.id,
                         leadName: lead.name,
                         leadStatus: lead.status,
                       ),
-                      icon: const Icon(
-                          Icons.calendar_month_outlined, size: 18),
-                      label: const Text('Schedule Follow-up'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryLight,
-                        side: const BorderSide(
-                            color: AppColors.primaryLight),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1B3A8A),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.md),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        textStyle: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            LucideIcons.calendarPlus,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Schedule Follow-up',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 32),
+              ],
             ),
           ),
         ),
@@ -610,56 +738,7 @@ class _Body extends StatelessWidget {
   }
 }
 
-// ── Status row ─────────────────────────────────────────────────────────────────
-
-class _StatusRow extends StatelessWidget {
-  final String current;
-  final ValueChanged<String> onTap;
-
-  static const _statuses = [
-    kStatusNew, kStatusHot, kStatusWarm, kStatusCold, kStatusDone,
-  ];
-
-  const _StatusRow({required this.current, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      children: _statuses.map((s) {
-        final active = s == current;
-        return GestureDetector(
-          onTap: active ? null : () => onTap(s),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg, vertical: 10),
-            decoration: BoxDecoration(
-              color: active ? _statusBg(s) : AppColors.surfaceAltLight,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(
-                color: active ? _statusBg(s) : AppColors.borderLight,
-              ),
-            ),
-            child: Text(
-              _capitalize(s),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: active
-                    ? _statusFg(s)
-                    : AppColors.textSecondaryLight,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-// ── Small widgets ──────────────────────────────────────────────────────────────
+// ── Info row ───────────────────────────────────────────────────────────────────
 
 class _InfoRow extends StatelessWidget {
   final String label;
@@ -671,24 +750,80 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: last ? 0 : AppSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(label,
-                style: const TextStyle(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 110,
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: AppColors.textSecondaryLight)),
-          ),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(
+                    color: const Color(0xFF9CA3AF),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  value,
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimaryLight)),
+                    color: const Color(0xFF111827),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!last)
+          const Divider(
+              height: 1, thickness: 0.5, color: Color(0xFFF3F4F6)),
+      ],
+    );
+  }
+}
+
+// ── Notes row ──────────────────────────────────────────────────────────────────
+
+class _NotesRow extends StatelessWidget {
+  final String notes;
+  const _NotesRow({required this.notes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Notes',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF9CA3AF),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              notes,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(0xFF4B5563),
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),
@@ -696,11 +831,64 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _Divider extends StatelessWidget {
-  const _Divider();
+// ── Status chips (horizontal scroll) ──────────────────────────────────────────
+
+class _StatusChips extends StatelessWidget {
+  final String current;
+  final ValueChanged<String> onTap;
+
+  static const _statuses = [
+    kStatusNew, kStatusHot, kStatusWarm, kStatusCold, kStatusDone,
+  ];
+
+  const _StatusChips({required this.current, required this.onTap});
+
   @override
-  Widget build(BuildContext context) => const Divider(
-      height: 1, thickness: 1, color: AppColors.surfaceAltLight);
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _statuses.map((s) {
+          final active = s == current;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: active ? null : () => onTap(s),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: active
+                      ? const Color(0xFF1B3A8A)
+                      : Colors.white,
+                  borderRadius:
+                      BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(
+                    color: active
+                        ? const Color(0xFF1B3A8A)
+                        : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    _capitalize(s),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: active
+                          ? Colors.white
+                          : const Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -732,26 +920,26 @@ String _month(int m) => const [
 String _timelineDisplay(String db) => const {
       'immediate': 'Immediate',
       'within_1_month': 'Within 1 Month',
-      '1_3_months': '1–3 Months',
-      '3_6_months': '3–6 Months',
+      '1_3_months': '1-3 Months',
+      '3_6_months': '3-6 Months',
       '6_plus_months': '6+ Months',
     }[db] ??
     db;
 
 Color _statusBg(String s) => switch (s) {
-      kStatusNew  => const Color(0xFFDBEAFE),
-      kStatusHot  => const Color(0xFFFFEDD5),
-      kStatusWarm => const Color(0xFFFEF9C3),
-      kStatusCold => const Color(0xFFE0F2FE),
-      kStatusDone => const Color(0xFFDCFCE7),
+      kStatusNew  => const Color(0xFFEEF2FF),
+      kStatusHot  => const Color(0xFFFFF7ED),
+      kStatusWarm => const Color(0xFFFFFBEB),
+      kStatusCold => const Color(0xFFF9FAFB),
+      kStatusDone => const Color(0xFFECFDF5),
       _           => AppColors.surfaceAltLight,
     };
 
 Color _statusFg(String s) => switch (s) {
-      kStatusNew  => const Color(0xFF1D4ED8),
+      kStatusNew  => const Color(0xFF1B3A8A),
       kStatusHot  => const Color(0xFFC2410C),
       kStatusWarm => const Color(0xFF92400E),
-      kStatusCold => const Color(0xFF0369A1),
+      kStatusCold => const Color(0xFF6B7280),
       kStatusDone => const Color(0xFF15803D),
       _           => AppColors.textSecondaryLight,
     };

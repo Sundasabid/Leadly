@@ -279,6 +279,9 @@ class _InsightsSection extends ConsumerWidget {
       error: (_, stack) => const SizedBox.shrink(),
       data: (insights) {
         if (insights == null) return const SizedBox.shrink();
+        // No real category data means the cron ran but leads had no
+        // area/property/budget/intent fields — nothing useful to show.
+        if (!insights.hasAnyCategoryData) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -318,21 +321,14 @@ class _InsightCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.primaryTintLight,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border(
             left: const BorderSide(color: AppColors.primaryLight, width: 3),
-            top: BorderSide(color: AppColors.borderLight),
-            right: BorderSide(color: AppColors.borderLight),
-            bottom: BorderSide(color: AppColors.borderLight),
+            top: const BorderSide(color: Color(0xFFBFDBFE)),
+            right: const BorderSide(color: Color(0xFFBFDBFE)),
+            bottom: const BorderSide(color: Color(0xFFBFDBFE)),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

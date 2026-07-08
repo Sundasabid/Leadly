@@ -48,7 +48,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
 
     try {
-      await Supabase.instance.client.from('profiles').insert({
+      await Supabase.instance.client.from('profiles').upsert({
         'id': user.id,
         'name': _nameController.text.trim(),
         'agency_name': _agencyController.text.trim(),
@@ -94,7 +94,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'LEADLY',
+                      'PROPEX',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 36,

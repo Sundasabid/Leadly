@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -23,19 +24,23 @@ class _FollowUpsScreenState extends ConsumerState<FollowUpsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
 
-  // Tracks which follow-up rows are currently calling markComplete().
   final Set<String> _completing = {};
-  // Tracks per-row mark-complete errors: followUpId → error message.
   final Map<String, String> _rowErrors = {};
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (!_tabCtrl.indexIsChanging && mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _tabCtrl.removeListener(_onTabChanged);
     _tabCtrl.dispose();
     super.dispose();
   }
@@ -51,17 +56,13 @@ class _FollowUpsScreenState extends ConsumerState<FollowUpsScreen>
       if (!mounted) return;
       setState(() => _completing.remove(fu.id));
 
-      // Only open the outcome sheet after the DB write is confirmed.
       await showCompleteOutcomeSheet(
         context,
         leadId: fu.leadId,
         leadName: fu.leadName ?? 'Lead',
-        currentLeadStatus: 'new', // safe fallback; sheet updates status forward
+        currentLeadStatus: 'new',
       );
 
-      // followUpsProvider is invalidated inside the sheet after any action.
-      // If the sheet was dismissed without action, invalidate here so the
-      // completed row disappears from the active tabs.
       ref.invalidate(followUpsProvider);
     } on PostgrestException catch (e) {
       setState(() {
@@ -82,154 +83,148 @@ class _FollowUpsScreenState extends ConsumerState<FollowUpsScreen>
     final bottomPad = MediaQuery.of(context).padding.bottom + 80;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryLight,
+      backgroundColor: const Color(0xFFF0F4F8),
       body: SafeArea(
         bottom: false,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Blue header ──────────────────────────────────────────────
+            // ── Header ──────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, AppSpacing.xl,
-                  AppSpacing.lg, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Follow-ups',
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
-                  ),
+                  AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, 0),
+              child: Text(
+                'Follow-ups',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryLight,
                 ),
               ),
             ),
 
             const SizedBox(height: AppSpacing.md),
 
-            // ── White card with tabs ─────────────────────────────────────
+            // ── Content ──────────────────────────────────────────────────
             Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(AppRadius.lg)),
+              child: asyncFollowUps.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(
+                      color: AppColors.primaryLight, strokeWidth: 2),
                 ),
-                child: asyncFollowUps.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primaryLight),
-                  ),
-                  error: (err, _) => _ErrorState(
-                    message: err is PostgrestException
-                        ? err.message
-                        : err.toString().replaceFirst('Exception: ', ''),
-                    onRetry: () => ref.invalidate(followUpsProvider),
-                  ),
-                  data: (all) {
-                    final overdue = all
-                        .where((f) => f.derivedStatus == 'overdue')
-                        .toList();
-                    final dueToday = all
-                        .where((f) => f.derivedStatus == 'due_today')
-                        .toList();
-                    final upcoming = all
-                        .where((f) => f.derivedStatus == 'upcoming')
-                        .toList();
-                    final completed = all
-                        .where((f) => f.derivedStatus == 'completed')
-                        .toList();
+                error: (err, _) => _ErrorState(
+                  message: err is PostgrestException
+                      ? err.message
+                      : err.toString().replaceFirst('Exception: ', ''),
+                  onRetry: () => ref.invalidate(followUpsProvider),
+                ),
+                data: (all) {
+                  final overdue = all
+                      .where((f) => f.derivedStatus == 'overdue')
+                      .toList();
+                  final dueToday = all
+                      .where((f) => f.derivedStatus == 'due_today')
+                      .toList();
+                  final upcoming = all
+                      .where((f) => f.derivedStatus == 'upcoming')
+                      .toList();
+                  final completed = all
+                      .where((f) => f.derivedStatus == 'completed')
+                      .toList();
 
-                    return Column(
-                      children: [
-                        // Tab bar
-                        TabBar(
-                          controller: _tabCtrl,
-                          isScrollable: true,
-                          tabAlignment: TabAlignment.start,
-                          labelColor: AppColors.primaryLight,
-                          unselectedLabelColor:
-                              AppColors.textSecondaryLight,
-                          indicatorColor: AppColors.primaryLight,
-                          indicatorWeight: 2,
-                          labelStyle: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          unselectedLabelStyle:
-                              const TextStyle(fontSize: 13),
-                          tabs: [
-                            _CountTab(
-                                label: 'Overdue',
-                                count: overdue.length),
-                            _CountTab(
-                                label: 'Due Today',
-                                count: dueToday.length),
-                            _CountTab(
-                                label: 'Upcoming',
-                                count: upcoming.length),
-                            _CountTab(
-                                label: 'Completed',
-                                count: completed.length),
+                  final idx = _tabCtrl.index;
+
+                  return Column(
+                    children: [
+                      // ── Custom tab pills ───────────────────────────────
+                      SizedBox(
+                        height: 34,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg),
+                          children: [
+                            _TabPill(
+                              label: 'Overdue',
+                              count: overdue.length,
+                              active: idx == 0,
+                              isOverdue: true,
+                              onTap: () => _tabCtrl.animateTo(0),
+                            ),
+                            const SizedBox(width: 12),
+                            _TabPill(
+                              label: 'Due Today',
+                              count: dueToday.length,
+                              active: idx == 1,
+                              onTap: () => _tabCtrl.animateTo(1),
+                            ),
+                            const SizedBox(width: 12),
+                            _TabPill(
+                              label: 'Upcoming',
+                              count: upcoming.length,
+                              active: idx == 2,
+                              onTap: () => _tabCtrl.animateTo(2),
+                            ),
+                            const SizedBox(width: 12),
+                            _TabPill(
+                              label: 'Completed',
+                              count: completed.length,
+                              active: idx == 3,
+                              onTap: () => _tabCtrl.animateTo(3),
+                            ),
                           ],
                         ),
-                        const Divider(
-                            height: 1,
-                            color: AppColors.dividerLight),
+                      ),
 
-                        // Tab content
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabCtrl,
-                            children: [
-                              _TabView(
-                                items: overdue,
-                                showCheckbox: true,
-                                completing: _completing,
-                                rowErrors: _rowErrors,
-                                onComplete: _markComplete,
-                                bottomPad: bottomPad,
-                                emptyMessage:
-                                    'No overdue follow-ups.',
-                              ),
-                              _TabView(
-                                items: dueToday,
-                                showCheckbox: true,
-                                completing: _completing,
-                                rowErrors: _rowErrors,
-                                onComplete: _markComplete,
-                                bottomPad: bottomPad,
-                                emptyMessage:
-                                    'Nothing due today.',
-                              ),
-                              _TabView(
-                                items: upcoming,
-                                showCheckbox: true,
-                                completing: _completing,
-                                rowErrors: _rowErrors,
-                                onComplete: _markComplete,
-                                bottomPad: bottomPad,
-                                emptyMessage:
-                                    'No upcoming follow-ups.',
-                              ),
-                              _TabView(
-                                items: completed,
-                                showCheckbox: false,
-                                completing: _completing,
-                                rowErrors: _rowErrors,
-                                onComplete: _markComplete,
-                                bottomPad: bottomPad,
-                                emptyMessage:
-                                    'No completed follow-ups yet.',
-                              ),
-                            ],
-                          ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // ── Tab content ─────────────────────────────────────
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabCtrl,
+                          children: [
+                            _TabView(
+                              items: overdue,
+                              tabStatus: 'overdue',
+                              showCheckbox: true,
+                              completing: _completing,
+                              rowErrors: _rowErrors,
+                              onComplete: _markComplete,
+                              bottomPad: bottomPad,
+                            ),
+                            _TabView(
+                              items: dueToday,
+                              tabStatus: 'due_today',
+                              showCheckbox: true,
+                              completing: _completing,
+                              rowErrors: _rowErrors,
+                              onComplete: _markComplete,
+                              bottomPad: bottomPad,
+                            ),
+                            _TabView(
+                              items: upcoming,
+                              tabStatus: 'upcoming',
+                              showCheckbox: true,
+                              completing: _completing,
+                              rowErrors: _rowErrors,
+                              onComplete: _markComplete,
+                              bottomPad: bottomPad,
+                            ),
+                            _TabView(
+                              items: completed,
+                              tabStatus: 'completed',
+                              showCheckbox: false,
+                              completing: _completing,
+                              rowErrors: _rowErrors,
+                              onComplete: _markComplete,
+                              bottomPad: bottomPad,
+                            ),
+                          ],
                         ),
-                      ],
-                    );
-                  },
-                ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -239,41 +234,87 @@ class _FollowUpsScreenState extends ConsumerState<FollowUpsScreen>
   }
 }
 
-// ── Tab label with count badge ─────────────────────────────────────────────────
+// ── Custom tab pill ────────────────────────────────────────────────────────────
 
-class _CountTab extends StatelessWidget {
+class _TabPill extends StatelessWidget {
   final String label;
   final int count;
-  const _CountTab({required this.label, required this.count});
+  final bool active;
+  final bool isOverdue;
+  final VoidCallback onTap;
+
+  const _TabPill({
+    required this.label,
+    required this.count,
+    required this.active,
+    this.isOverdue = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Tab(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label),
-          if (count > 0) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius:
-                    BorderRadius.circular(AppRadius.pill),
-              ),
-              child: Text(
-                '$count',
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+    final badgeColor = isOverdue
+        ? const Color(0xFFEF4444)
+        : const Color(0xFF1B3A8A);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: active ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(17),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight:
+                      active ? FontWeight.w600 : FontWeight.w400,
+                  color: active
+                      ? const Color(0xFF1B3A8A)
+                      : const Color(0xFF9CA3AF),
                 ),
               ),
-            ),
-          ],
-        ],
+              if (count > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: badgeColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -283,281 +324,417 @@ class _CountTab extends StatelessWidget {
 
 class _TabView extends StatelessWidget {
   final List<FollowUpModel> items;
+  final String tabStatus;
   final bool showCheckbox;
   final Set<String> completing;
   final Map<String, String> rowErrors;
   final ValueChanged<FollowUpModel> onComplete;
   final double bottomPad;
-  final String emptyMessage;
 
   const _TabView({
     required this.items,
+    required this.tabStatus,
     required this.showCheckbox,
     required this.completing,
     required this.rowErrors,
     required this.onComplete,
     required this.bottomPad,
-    required this.emptyMessage,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Center(
-        child: Text(
-          emptyMessage,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondaryLight,
-          ),
-        ),
+    if (items.isEmpty) return _emptyState(tabStatus);
+
+    final accent = _accentColor(tabStatus);
+
+    if (tabStatus == 'upcoming') {
+      return _GroupedUpcomingList(
+        items: items,
+        accentColor: accent,
+        completing: completing,
+        rowErrors: rowErrors,
+        onComplete: onComplete,
+        bottomPad: bottomPad,
       );
     }
 
-    return ListView.separated(
-      padding: EdgeInsets.only(
-          top: AppSpacing.sm, bottom: bottomPad),
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(16, 4, 16, bottomPad),
       itemCount: items.length,
-      separatorBuilder: (context, index) =>
-          const Divider(height: 1, color: AppColors.dividerLight),
-      itemBuilder: (ctx, i) {
-        final fu = items[i];
-        return _FollowUpRow(
-          followUp: fu,
+      itemBuilder: (ctx, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _FollowUpCard(
+          followUp: items[i],
+          accentColor: accent,
           showCheckbox: showCheckbox,
-          isCompleting: completing.contains(fu.id),
-          error: rowErrors[fu.id],
-          onComplete: () => onComplete(fu),
+          isCompleting: completing.contains(items[i].id),
+          error: rowErrors[items[i].id],
+          onComplete: () => onComplete(items[i]),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _emptyState(String tabStatus) => switch (tabStatus) {
+      'overdue' => const _EmptyState(
+          icon: LucideIcons.checkCircle2,
+          iconColor: Color(0xFF10B981),
+          iconBg: Color(0xFFECFDF5),
+          title: 'All caught up!',
+          subtitle: 'No overdue follow-ups',
+        ),
+      'due_today' => const _EmptyState(
+          icon: LucideIcons.sun,
+          iconColor: Color(0xFFF59E0B),
+          iconBg: Color(0xFFFFFBEB),
+          title: 'Nothing due today',
+          subtitle: 'Check back later or schedule a follow-up',
+        ),
+      'upcoming' => const _EmptyState(
+          icon: LucideIcons.calendar,
+          iconColor: Color(0xFF1B3A8A),
+          iconBg: Color(0xFFEFF6FF),
+          title: 'Nothing scheduled',
+          subtitle: 'Schedule follow-ups from your lead cards',
+        ),
+      'completed' => const _EmptyState(
+          icon: LucideIcons.clock,
+          iconColor: Color(0xFF9CA3AF),
+          iconBg: Color(0xFFF3F4F6),
+          title: 'No completed follow-ups yet',
+          subtitle: 'Complete follow-ups to see them here',
+        ),
+      _ => const SizedBox.shrink(),
+    };
+
+// ── Grouped list for the Upcoming tab ─────────────────────────────────────────
+
+class _GroupedUpcomingList extends StatelessWidget {
+  final List<FollowUpModel> items;
+  final Color accentColor;
+  final Set<String> completing;
+  final Map<String, String> rowErrors;
+  final ValueChanged<FollowUpModel> onComplete;
+  final double bottomPad;
+
+  const _GroupedUpcomingList({
+    required this.items,
+    required this.accentColor,
+    required this.completing,
+    required this.rowErrors,
+    required this.onComplete,
+    required this.bottomPad,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final oneWeekLater = today.add(const Duration(days: 7));
+
+    final tomorrowItems = <FollowUpModel>[];
+    final thisWeekItems = <FollowUpModel>[];
+    final laterItems = <FollowUpModel>[];
+
+    for (final fu in items) {
+      final local = fu.dueAt.toLocal();
+      final dueDay = DateTime(local.year, local.month, local.day);
+      if (dueDay == tomorrow) {
+        tomorrowItems.add(fu);
+      } else if (dueDay.isAfter(tomorrow) && !dueDay.isAfter(oneWeekLater)) {
+        thisWeekItems.add(fu);
+      } else {
+        laterItems.add(fu);
+      }
+    }
+
+    final listItems = <Object>[];
+    if (tomorrowItems.isNotEmpty) {
+      listItems.add('TOMORROW');
+      listItems.addAll(tomorrowItems);
+    }
+    if (thisWeekItems.isNotEmpty) {
+      listItems.add('THIS WEEK');
+      listItems.addAll(thisWeekItems);
+    }
+    if (laterItems.isNotEmpty) {
+      listItems.add('LATER');
+      listItems.addAll(laterItems);
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(16, 4, 16, bottomPad),
+      itemCount: listItems.length,
+      itemBuilder: (ctx, i) {
+        final item = listItems[i];
+        if (item is String) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              item,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF9CA3AF),
+                letterSpacing: 0.5,
+              ),
+            ),
+          );
+        }
+        final fu = item as FollowUpModel;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _FollowUpCard(
+            followUp: fu,
+            accentColor: accentColor,
+            showCheckbox: true,
+            isCompleting: completing.contains(fu.id),
+            error: rowErrors[fu.id],
+            onComplete: () => onComplete(fu),
+          ),
         );
       },
     );
   }
 }
 
-// ── Follow-up row ──────────────────────────────────────────────────────────────
+// ── Follow-up card ─────────────────────────────────────────────────────────────
 
-class _FollowUpRow extends StatelessWidget {
+class _FollowUpCard extends StatelessWidget {
   final FollowUpModel followUp;
+  final Color accentColor;
   final bool showCheckbox;
   final bool isCompleting;
   final String? error;
   final VoidCallback onComplete;
 
-  const _FollowUpRow({
+  const _FollowUpCard({
     required this.followUp,
+    required this.accentColor,
     required this.showCheckbox,
     required this.isCompleting,
     required this.error,
     required this.onComplete,
   });
 
-  Color get _priorityColor => switch (followUp.priority) {
-        'hot' => const Color(0xFFC2410C),
-        'cold' => const Color(0xFF0369A1),
-        _ => const Color(0xFF92400E),
-      };
-
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: () => context.push('/leads/${followUp.leadId}'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Priority indicator strip
-                Container(
-                  width: 3,
-                  height: 48,
-                  margin:
-                      const EdgeInsets.only(right: AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: _priorityColor,
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
+            // Main content: accent bar + body
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Left accent bar
+                  Container(width: 4, color: accentColor),
 
-                // Body
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Lead name + area
-                      Text(
-                        followUp.leadName ?? 'Unknown Lead',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimaryLight,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  // Body
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // TOP ROW: lead name + priority badge
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  followUp.leadName ?? 'Unknown Lead',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF111827),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _PriorityBadge(
+                                  priority: followUp.priority),
+                            ],
+                          ),
+
+                          // SECOND ROW: area with MapPin icon
+                          if (followUp.leadArea != null &&
+                              followUp.leadArea!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(
+                                  LucideIcons.mapPin,
+                                  size: 12,
+                                  color: Color(0xFF6B7280),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    followUp.leadArea!,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: const Color(0xFF6B7280),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          const SizedBox(height: 6),
+
+                          // THIRD ROW: task description
+                          Text(
+                            followUp.taskDescription,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: const Color(0xFF4B5563),
+                              fontStyle: followUp.taskDescription
+                                          .toLowerCase()
+                                          .trim() ==
+                                      'follow up'
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // BOTTOM ROW: clock + due time + circle
+                          Row(
+                            children: [
+                              Icon(LucideIcons.clock,
+                                  size: 12, color: accentColor),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  _formatDue(followUp.dueAt),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: accentColor,
+                                  ),
+                                ),
+                              ),
+                              // Completion circle
+                              if (isCompleting)
+                                const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primaryLight,
+                                  ),
+                                )
+                              else if (showCheckbox)
+                                GestureDetector(
+                                  onTap: onComplete,
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color:
+                                            const Color(0xFFD1D5DB),
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                // Completed indicator
+                                Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                  child: const Icon(
+                                    Icons.check_rounded,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
                       ),
-                      if (followUp.leadArea != null &&
-                          followUp.leadArea!.isNotEmpty) ...[
-                        const SizedBox(height: 1),
-                        Text(
-                          followUp.leadArea!,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Per-row error
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 12, 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.dangerBgLight,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          error!,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondaryLight,
+                            color: AppColors.dangerTextLight,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                      const SizedBox(height: AppSpacing.xs),
-                      // Task description
-                      Text(
-                        followUp.taskDescription,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondaryLight,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: AppSpacing.xs),
-                      // Due time + priority badge
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time_rounded,
-                            size: 12,
-                            color: AppColors.textDisabledLight,
+                      GestureDetector(
+                        onTap: onComplete,
+                        child: const Text(
+                          'Retry',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.dangerTextLight,
                           ),
-                          const SizedBox(width: 3),
-                          Text(
-                            _formatDue(followUp.dueAt),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textDisabledLight,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          _PriorityBadge(
-                              priority: followUp.priority),
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                // Checkbox / spinner
-                if (showCheckbox)
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: AppSpacing.sm),
-                    child: isCompleting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primaryLight,
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: onComplete,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.borderLight,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-              ],
-            ),
-
-            // Per-row error
-            if (error != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.dangerBgLight,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        error!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.dangerTextLight,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: onComplete,
-                      child: const Text(
-                        'Retry',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.dangerTextLight,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
-            ],
           ],
         ),
       ),
     );
   }
-
-  String _formatDue(DateTime dt) {
-    // Convert to local time before extracting date components — due_at comes
-    // from Supabase as UTC and DateTime.parse returns a UTC DateTime.
-    // Without .toLocal(), date comparisons are wrong during the 5-hour window
-    // where Pakistan (UTC+5) is on a different calendar day than UTC.
-    final local = dt.toLocal();
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDay = DateTime(local.year, local.month, local.day);
-    final diff = dueDay.difference(today).inDays;
-
-    final timeStr = _timeStr(local);
-
-    if (diff == 0) return 'Today, $timeStr';
-    if (diff == 1) return 'Tomorrow, $timeStr';
-    if (diff == -1) return 'Yesterday, $timeStr';
-    if (diff < 0) return '${(-diff)}d ago, $timeStr';
-
-    const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${local.day} ${months[local.month]}, $timeStr';
-  }
-
-  String _timeStr(DateTime local) {
-    final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
-    final m = local.minute.toString().padLeft(2, '0');
-    final period = local.hour < 12 ? 'AM' : 'PM';
-    return '$h:$m $period';
-  }
 }
 
-// ── Priority badge (for follow-up priority, not lead status) ──────────────────
+// ── Priority badge ─────────────────────────────────────────────────────────────
 
 class _PriorityBadge extends StatelessWidget {
   final String priority;
@@ -584,17 +761,83 @@ class _PriorityBadge extends StatelessWidget {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      height: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 7),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: fg,
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: fg,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Empty state ────────────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String title;
+  final String? subtitle;
+
+  const _EmptyState({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.title,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: iconBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 36, color: iconColor),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimaryLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                subtitle!,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.textSecondaryLight,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -616,13 +859,24 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline,
-                color: AppColors.dangerTextLight, size: 48),
-            const SizedBox(height: AppSpacing.md),
-            const Text(
-              'Could not load follow-ups.',
-              style: TextStyle(
-                fontSize: 15,
+            Container(
+              width: 80,
+              height: 80,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEF2F2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.wifi_off_rounded,
+                size: 36,
+                color: AppColors.dangerTextLight,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              'Could not load follow-ups',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryLight,
               ),
@@ -631,7 +885,7 @@ class _ErrorState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 color: AppColors.textSecondaryLight,
               ),
@@ -644,6 +898,7 @@ class _ErrorState extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.primaryLight,
                   fontWeight: FontWeight.w600,
+                  fontSize: 15,
                 ),
               ),
             ),
@@ -652,4 +907,39 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+Color _accentColor(String status) => switch (status) {
+      'overdue'   => const Color(0xFFEF4444),
+      'due_today' => const Color(0xFFF59E0B),
+      'upcoming'  => const Color(0xFF1B3A8A),
+      'completed' => const Color(0xFF10B981),
+      _           => const Color(0xFF1B3A8A),
+    };
+
+String _formatDue(DateTime dt) {
+  final local = dt.toLocal();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final dueDay = DateTime(local.year, local.month, local.day);
+  final diff = dueDay.difference(today).inDays;
+  final t = _timeStr(local);
+  if (diff == 0) return 'Today, $t';
+  if (diff == 1) return 'Tomorrow, $t';
+  if (diff == -1) return 'Yesterday, $t';
+  if (diff < 0) return '${-diff}d ago, $t';
+  const months = [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${local.day} ${months[local.month]}, $t';
+}
+
+String _timeStr(DateTime local) {
+  final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final m = local.minute.toString().padLeft(2, '0');
+  final period = local.hour < 12 ? 'AM' : 'PM';
+  return '$h:$m $period';
 }

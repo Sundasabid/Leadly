@@ -12,7 +12,6 @@ class PrivacyDataScreen extends StatelessWidget {
   const PrivacyDataScreen({super.key});
 
   static const _email = 'appdev2614@gmail.com';
-  static const _waNumber = '923436696689';
 
   Future<void> _launchEmail(String subject) async {
     final uri = Uri(
@@ -21,13 +20,6 @@ class PrivacyDataScreen extends StatelessWidget {
       queryParameters: {'subject': subject},
     );
     if (await canLaunchUrl(uri)) await launchUrl(uri);
-  }
-
-  Future<void> _launchWhatsApp() async {
-    final uri = Uri.parse('https://wa.me/$_waNumber');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   void _showDeletionDialog(BuildContext context) {
@@ -61,7 +53,7 @@ class PrivacyDataScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _launchEmail('Data Deletion Request - Leadly');
+              _launchEmail('Data Deletion Request - Propex');
             },
             child: const Text(
               'Send Request',
@@ -128,45 +120,45 @@ class PrivacyDataScreen extends StatelessWidget {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(
                       AppSpacing.lg, AppSpacing.xl,
-                      AppSpacing.lg, AppSpacing.xxl),
+                      AppSpacing.lg, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Data We Store ──────────────────────────────────
+                      // ── What We Store ──────────────────────────────────
                       _PrivacySection(
                         icon: LucideIcons.database,
-                        title: 'Data We Store',
+                        title: 'What We Store',
                         items: const [
-                          'Your leads - names, phones, budgets, property preferences',
-                          'Follow-up schedules and outcomes',
-                          'Profile info - name, agency, city, phone',
-                          'Voice recordings are processed by AI and not stored',
+                          'Your name, phone number, and agency details',
+                          'Lead information you add (names, contacts, notes)',
+                          'Your follow-up schedules and reminders',
+                          'Your notification and app preferences',
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: 10),
 
-                      // ── How We Use It ──────────────────────────────────
-                      _PrivacySection(
-                        icon: LucideIcons.zap,
-                        title: 'How We Use It',
-                        items: const [
-                          'To power your CRM and display your leads and follow-ups',
-                          'To generate AI-powered weekly market insights',
-                          'To send you notification alerts you have enabled',
-                          'We do not sell your data to third parties',
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // ── Data Security ──────────────────────────────────
+                      // ── How We Use Your Data ───────────────────────────
                       _PrivacySection(
                         icon: LucideIcons.shield,
-                        title: 'Data Security',
+                        title: 'How We Use Your Data',
                         items: const [
-                          'Hosted on Supabase (SOC 2 Type II compliant)',
-                          'Encrypted at rest and in transit (TLS 1.3)',
-                          'Row-level security - you only access your own data',
-                          'API keys never exposed in the app',
+                          'To show you your leads and follow-ups',
+                          'To send you smart reminders about your work',
+                          'To generate weekly insights about your activity',
+                          'We never sell or share your data with anyone',
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // ── Your Data is Safe ──────────────────────────────
+                      _PrivacySection(
+                        icon: LucideIcons.lock,
+                        title: 'Your Data is Safe',
+                        items: const [
+                          'Your data is stored securely in the cloud',
+                          'Only you can access your own information',
+                          'You can delete your account and all data anytime',
+                          'Voice recordings are processed instantly and never stored',
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xl),
@@ -174,7 +166,7 @@ class PrivacyDataScreen extends StatelessWidget {
                       // ── Delete Your Data ───────────────────────────────
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF2F2),
                           borderRadius:
@@ -236,34 +228,7 @@ class PrivacyDataScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // ── Contact Us ─────────────────────────────────────
-                      Text(
-                        'Contact Us',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimaryLight,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _ContactItem(
-                        icon: LucideIcons.mail,
-                        label: 'Email',
-                        detail: _email,
-                        onTap: () =>
-                            _launchEmail('Leadly Privacy Inquiry'),
-                      ),
-                      const Divider(
-                          height: 1, color: AppColors.dividerLight),
-                      _ContactItem(
-                        icon: LucideIcons.messageCircle,
-                        label: 'WhatsApp',
-                        detail: '03436696689',
-                        onTap: _launchWhatsApp,
-                      ),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
@@ -293,7 +258,7 @@ class _PrivacySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceAltLight,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -355,73 +320,6 @@ class _PrivacySection extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── Contact item ───────────────────────────────────────────────────────────────
-
-class _ContactItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String detail;
-  final VoidCallback onTap;
-
-  const _ContactItem({
-    required this.icon,
-    required this.label,
-    required this.detail,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryTintLight,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon,
-                  size: 20, color: AppColors.primaryLight),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimaryLight,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    detail,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondaryLight,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(LucideIcons.chevronRight,
-                color: AppColors.textSecondaryLight, size: 20),
-          ],
-        ),
       ),
     );
   }

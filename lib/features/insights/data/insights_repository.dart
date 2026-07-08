@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -54,7 +56,18 @@ class InsightsCacheModel {
     InsightsCategoryData? parseCategory(String key) {
       final v = json[key];
       if (v == null) return null;
-      return InsightsCategoryData.fromJson(Map<String, dynamic>.from(v as Map));
+      final Map<String, dynamic> map;
+      if (v is Map) {
+        map = Map<String, dynamic>.from(v);
+      } else if (v is String) {
+        map = Map<String, dynamic>.from(jsonDecode(v) as Map);
+      } else {
+        return null;
+      }
+      final result = InsightsCategoryData.fromJson(map);
+      // ignore: avoid_print
+      print('[Insights] $key → name="${result.name}" count=${result.count} runtimeType(v)=${v.runtimeType}');
+      return result;
     }
 
     final rawTrend = json['demand_trend'];
@@ -109,6 +122,16 @@ class InsightsCacheModel {
     }
     return '${_months[periodStart.month]} ${periodStart.day}'
         ' - ${_months[periodEnd.month]} ${periodEnd.day}';
+  }
+
+  // True when at least one category has count > 0 — meaning real leads were
+  // captured and bucketed. False means the cron ran but all category fields
+  // were null (leads had no area/property/budget/intent data that week).
+  bool get hasAnyCategoryData {
+    return (topArea?.count ?? 0) > 0 ||
+        (trendingPropertyType?.count ?? 0) > 0 ||
+        (mostActiveBudgetRange?.count ?? 0) > 0 ||
+        (hottestDemandCategory?.count ?? 0) > 0;
   }
 
   // Picks the category with the highest absolute change_pct.
@@ -174,9 +197,12 @@ class InsightsRepository {
   const InsightsRepository(this._client);
 
   Future<InsightsCacheModel?> fetchLatest() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return null;
     final row = await _client
         .from('insights_cache')
         .select()
+        .eq('agent_id', userId)
         .order('period_start', ascending: false)
         .limit(1)
         .maybeSingle();
@@ -184,21 +210,22 @@ class InsightsRepository {
     return InsightsCacheModel.fromJson(Map<String, dynamic>.from(row as Map));
   }
 
-  /// Returns all period_start dates this agent has insights for, newest first.
-  /// RLS restricts results to agent_id = auth.uid() — no explicit filter needed.
   Future<List<DateTime>> fetchAvailableWeeks() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return [];
     final rows = await _client
         .from('insights_cache')
         .select('period_start')
+        .eq('agent_id', userId)
         .order('period_start', ascending: false);
     return (rows as List)
         .map((row) => DateTime.parse(row['period_start'] as String))
         .toList();
   }
 
-  /// Fetches insights for the exact week starting on [periodStart].
-  /// Returns null if no row exists for that date.
   Future<InsightsCacheModel?> fetchByPeriod(DateTime periodStart) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return null;
     final dateStr =
         '${periodStart.year.toString().padLeft(4, '0')}-'
         '${periodStart.month.toString().padLeft(2, '0')}-'
@@ -206,6 +233,7 @@ class InsightsRepository {
     final row = await _client
         .from('insights_cache')
         .select()
+        .eq('agent_id', userId)
         .eq('period_start', dateStr)
         .maybeSingle();
     if (row == null) return null;
@@ -213,6 +241,6 @@ class InsightsRepository {
   }
 }
 
-final insightsRepositoryProvider = Provider<InsightsRepository>((ref) {
+final insightsRepositoryProvider = Provider.autoDispose<InsightsRepository>((ref) {
   return InsightsRepository(Supabase.instance.client);
 });

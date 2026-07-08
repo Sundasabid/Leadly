@@ -43,8 +43,22 @@ final _routerNotifierProvider = Provider<_RouterNotifier>((ref) {
 class _RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
+  // Set when Supabase fires passwordRecovery so we can route to the
+  // security screen; cleared once the user updates their password or signs out.
+  bool _isPasswordRecovery = false;
+
   _RouterNotifier(this._ref) {
-    _ref.listen(authStateProvider, (previous, next) => notifyListeners());
+    _ref.listen(authStateProvider, (previous, next) {
+      final event = next.valueOrNull?.event;
+      if (event == AuthChangeEvent.passwordRecovery) {
+        _isPasswordRecovery = true;
+      } else if (event == AuthChangeEvent.userUpdated ||
+          event == AuthChangeEvent.signedOut ||
+          event == AuthChangeEvent.signedIn) {
+        _isPasswordRecovery = false;
+      }
+      notifyListeners();
+    });
     _ref.listen(profileExistsProvider, (previous, next) => notifyListeners());
   }
 
@@ -53,6 +67,11 @@ class _RouterNotifier extends ChangeNotifier {
 
     // Splash manages its own routing after the animation — never intercept it.
     if (location == '/') return null;
+
+    // Password reset deep link — send user straight to the set-password screen.
+    if (_isPasswordRecovery && location != '/settings/security') {
+      return '/settings/security';
+    }
 
     final session = Supabase.instance.client.auth.currentSession;
     final isLoggedIn = session != null;
@@ -69,7 +88,11 @@ class _RouterNotifier extends ChangeNotifier {
 
       if (isOnAuth) return hasProfile ? '/dashboard' : '/onboarding';
       if (isOnOnboarding && hasProfile) return '/dashboard';
-      if (!isOnOnboarding && !hasProfile) return '/onboarding';
+      // Don't redirect the security screen to onboarding during recovery.
+      if (!isOnOnboarding && !hasProfile &&
+          location != '/settings/security') {
+        return '/onboarding';
+      }
     }
 
     return null;

@@ -102,11 +102,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ),
                   Text(
                     'Notifications',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: 0.3,
                     ),
                   ),
                   // Mark all as read
@@ -131,8 +130,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               disabledForegroundColor:
                                   Colors.white.withValues(alpha: 0.35),
                               padding: EdgeInsets.zero,
-                              textStyle: const TextStyle(
-                                fontSize: 13,
+                              textStyle: GoogleFonts.inter(
+                                fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -253,14 +252,10 @@ class _NotificationCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           notification.title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: read
-                                ? FontWeight.w500
-                                : FontWeight.w700,
-                            color: read
-                                ? AppColors.textSecondaryLight
-                                : AppColors.textPrimaryLight,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF111827),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -269,9 +264,10 @@ class _NotificationCard extends StatelessWidget {
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         _relativeTime(notification.createdAt),
-                        style: const TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: AppColors.textDisabledLight,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF9CA3AF),
                         ),
                       ),
                     ],
@@ -279,11 +275,10 @@ class _NotificationCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     notification.message,
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: read
-                          ? AppColors.textDisabledLight
-                          : AppColors.textSecondaryLight,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF4B5563),
                       height: 1.4,
                     ),
                     maxLines: 2,
@@ -327,16 +322,16 @@ class _TypeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding:
-          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: cfg.bg,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         cfg.label,
-        style: TextStyle(
+        style: GoogleFonts.inter(
           fontSize: 10,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: cfg.fg,
         ),
       ),

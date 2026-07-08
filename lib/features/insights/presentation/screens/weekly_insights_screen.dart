@@ -338,33 +338,34 @@ class _CategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.md,
-      crossAxisSpacing: AppSpacing.md,
-      childAspectRatio: 1.0,
+    final cards = [
+      _CategoryCard(label: 'Top Area', icon: LucideIcons.mapPin, data: insights.topArea),
+      _CategoryCard(label: 'Property Type', icon: LucideIcons.building2, data: insights.trendingPropertyType),
+      _CategoryCard(label: 'Budget Range', icon: LucideIcons.wallet, data: insights.mostActiveBudgetRange),
+      _CategoryCard(label: 'Demand', icon: LucideIcons.trendingUp, data: insights.hottestDemandCategory),
+    ];
+    return Column(
       children: [
-        _CategoryCard(
-          label: 'Top Area',
-          icon: LucideIcons.mapPin,
-          data: insights.topArea,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cards[0]),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: cards[1]),
+            ],
+          ),
         ),
-        _CategoryCard(
-          label: 'Property Type',
-          icon: LucideIcons.building2,
-          data: insights.trendingPropertyType,
-        ),
-        _CategoryCard(
-          label: 'Budget Range',
-          icon: LucideIcons.wallet,
-          data: insights.mostActiveBudgetRange,
-        ),
-        _CategoryCard(
-          label: 'Demand',
-          icon: LucideIcons.trendingUp,
-          data: insights.hottestDemandCategory,
+        const SizedBox(height: AppSpacing.md),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cards[2]),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: cards[3]),
+            ],
+          ),
         ),
       ],
     );
@@ -384,26 +385,19 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasData = data != null && data!.name.isNotEmpty;
+    final hasData = data != null && data!.count > 0;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.primaryTintLight,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border(
           left: const BorderSide(color: AppColors.primaryLight, width: 3),
-          top: BorderSide(color: AppColors.borderLight),
-          right: BorderSide(color: AppColors.borderLight),
-          bottom: BorderSide(color: AppColors.borderLight),
+          top: const BorderSide(color: Color(0xFFBFDBFE)),
+          right: const BorderSide(color: Color(0xFFBFDBFE)),
+          bottom: const BorderSide(color: Color(0xFFBFDBFE)),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,16 +423,16 @@ class _CategoryCard extends StatelessWidget {
           const SizedBox(height: 2),
           if (!hasData)
             const Text(
-              'No data',
+              'No leads this week',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: AppColors.textSecondaryLight,
               ),
             )
           else ...[
             Text(
-              data!.name,
+              data!.name.isNotEmpty ? data!.name : '-',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
